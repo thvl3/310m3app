@@ -5,7 +5,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Configure AWS DynamoDB
+# Connect to DynamoDB without explicit AWS credentials
 dynamodb = boto3.resource("dynamodb", region_name="us-west-2")  # Change to your AWS region
 table = dynamodb.Table("Restaurants")
 
@@ -13,10 +13,11 @@ table = dynamodb.Table("Restaurants")
 def recommend():
     data = request.get_json()
     
-    # Query restaurants based on user preferences
-    response = table.scan()  # Fetch all data (consider using filters in production)
+    # Scan entire table (since filtering on Scan is limited)
+    response = table.scan()
     restaurants = response.get("Items", [])
 
+    # Find the best match
     best_match = None
     for restaurant in restaurants:
         if (restaurant["cuisine"] == data.get("cuisine") and
