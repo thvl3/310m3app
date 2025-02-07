@@ -1,22 +1,22 @@
+import boto3
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Temporary restaurant data (Replace with DynamoDB later)
-restaurants = [
-    {"name": "Burger Joint", "cuisine": "american", "budget": "$", "atmosphere": "casual"},
-    {"name": "Fancy Pasta", "cuisine": "italian", "budget": "$$$", "atmosphere": "romantic"},
-    {"name": "Sushi Spot", "cuisine": "asian", "budget": "$$", "atmosphere": "lively"},
-    {"name": "Taco Haven", "cuisine": "mexican", "budget": "$", "atmosphere": "casual"}
-]
+# Configure AWS DynamoDB
+dynamodb = boto3.resource("dynamodb", region_name="us-west-2")  # Change to your AWS region
+table = dynamodb.Table("Restaurants")
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
     data = request.get_json()
     
-    # Find the best match (Simple filtering for now)
+    # Query restaurants based on user preferences
+    response = table.scan()  # Fetch all data (consider using filters in production)
+    restaurants = response.get("Items", [])
+
     best_match = None
     for restaurant in restaurants:
         if (restaurant["cuisine"] == data.get("cuisine") and
@@ -28,4 +28,4 @@ def recommend():
     return jsonify({"restaurant": best_match["name"] if best_match else "No match found"})
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")  # Ensure Flask listens for external connections
+    app.run(debug=True, host="0.0.0.0")
