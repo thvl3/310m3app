@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Personality Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .choice-box {
+            display: block;
+            padding: 10px;
+            margin: 10px auto;
+            width: 80%;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+        .choice-box:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h2>Find Your Perfect Restaurant</h2>
+    <div id="quiz-container">
+        <p id="question-text"></p>
+        <div id="choices"></div>
+    </div>
+    
+    <h3 id="result"></h3>
+    
+    <script>
+        const questions = [
+            { text: "What type of cuisine do you prefer?", choices: ["American", "Mexican", "Asian", "Italian"], key: "cuisine" },
+            { text: "What is your budget?", choices: ["$", "$$", "$$$"], key: "budget" },
+            { text: "What kind of atmosphere do you prefer?", choices: ["Casual", "Romantic", "Lively"], key: "atmosphere" }
+        ];
+        
+        let currentQuestion = 0;
+        let responses = {};
+        
+        function displayQuestion() {
+            if (currentQuestion < questions.length) {
+                const question = questions[currentQuestion];
+                document.getElementById("question-text").innerText = question.text;
+                const choicesDiv = document.getElementById("choices");
+                choicesDiv.innerHTML = "";
+                
+                question.choices.forEach(choice => {
+                    const button = document.createElement("div");
+                    button.classList.add("choice-box");
+                    button.innerText = choice;
+                    button.onclick = () => {
+                        responses[question.key] = choice.toLowerCase();
+                        currentQuestion++;
+                        displayQuestion();
+                    };
+                    choicesDiv.appendChild(button);
+                });
+            } else {
+                submitResponses();
+            }
+        }
+        
+        function submitResponses() {
+            fetch("http://localhost:5000/recommend", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(responses)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById("quiz-container").style.display = "none";
+                document.getElementById("result").innerText = "Best Match: " + result.restaurant;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+        
+        displayQuestion();
+    </script>
+</body>
+</html>
