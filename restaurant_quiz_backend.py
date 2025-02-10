@@ -1,13 +1,19 @@
 import boto3
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Enable CORS for cross-origin requests
+from flask_cors import CORS
 CORS(app)
 
-# Connect to DynamoDB without explicit AWS credentials
+# Connect to DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")  # Change to your AWS region
 table = dynamodb.Table("Restaurants")
+
+@app.route('/')  # 👈 Add this route
+def home():
+    return "<h1>Welcome to the Restaurant Quiz</h1><p>Use the /recommend endpoint to get suggestions.</p>"
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
