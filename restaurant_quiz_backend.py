@@ -6,7 +6,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Connect to DynamoDB without explicit AWS credentials
-dynamodb = boto3.resource("dynamodb", region_name="us-west-2")  # Change to your AWS region
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")  # Change to your AWS region
 table = dynamodb.Table("Restaurants")
 
 @app.route('/recommend', methods=['POST'])
