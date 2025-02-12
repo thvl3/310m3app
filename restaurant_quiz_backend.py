@@ -11,11 +11,11 @@ table = dynamodb.Table("Restaurants")  # Update with your actual table name
 
 # Assign weight importance
 WEIGHTS = {
-    "cuisine": 4,
+    "cuisine": 7,
     "budget": 3,
     "vibe": 2,
     "social": 2,
-    "dietary": 5
+    "dietary": 4
 }
 
 def map_budget(budget):
