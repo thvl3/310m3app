@@ -1,79 +1,93 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import boto3
 
-# Initialize Flask
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 CORS(app)
 
 # Connect to DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-west-1")
-table = dynamodb.Table("Restaurants")  # Ensure this matches your table name
+table = dynamodb.Table("Restaurants")  # Update with your actual table name
 
-# Convert user-friendly budget to price range stored in DynamoDB
-BUDGET_MAP = {
-    "$": "1-10",
-    "$$": "10-20",
-    "$$$": "20-30",
-    "$$$$": "30+"
+# Assign weight importance
+WEIGHTS = {
+    "cuisine": 4,
+    "budget": 3,
+    "vibe": 2,
+    "social": 2,
+    "dietary": 5
 }
 
 def map_budget(budget):
-    return BUDGET_MAP.get(budget, budget)  # Default to input if no match
+    """Convert budget symbols to DynamoDB values"""
+    BUDGET_MAP = {
+        "$": "1-10",
+        "$$": "10-20",
+        "$$$": "20-30",
+        "$$$$": "30+"
+    }
+    return BUDGET_MAP.get(budget, budget)
+
+@app.route("/", methods=["GET"])
+def home():
+    """ Serve the quiz page """
+    return render_template("index.html")
 
 @app.route("/recommend", methods=["POST"])
 def recommend():
     try:
         data = request.get_json()
-        if not all(k in data for k in ["cuisine", "budget", "atmosphere"]):
-            return jsonify({"error": "Missing required parameters"}), 400
+        if not data:
+            return jsonify({"error": "Missing request body"}), 400
 
-        # Normalize input
-        cuisine = data["cuisine"].strip().lower()
-        budget = map_budget(data["budget"].strip())
-        atmosphere = data["atmosphere"].strip().lower()
-        social_interaction = data.get("social_interaction", "").strip().lower()  # Optional
-        etc = data.get("etc", "").strip().lower()  # Additional filters like vegan, gluten-free
+        # Normalize user input
+        user_prefs = {
+            "cuisine": data.get("cuisine", "").strip().lower(),
+            "budget": map_budget(data.get("budget", "").strip()),
+            "vibe": data.get("vibe", "").strip().lower(),
+            "social": data.get("social", "").strip().lower(),
+            "dietary": data.get("dietary", "").strip().lower()
+        }
 
-        # Scan DynamoDB for all restaurants
+        # Fetch all restaurants
         response = table.scan()
         restaurants = response.get("Items", [])
 
-        # Filtering logic
-        recommendations = []
-        for r in restaurants:
-            if r.get("Cuisine_Type", "").strip().lower() != cuisine:
-                continue  # Skip if cuisine doesn't match
-            
-            if budget not in r.get("Price_Level", ""):
-                continue  # Skip if budget doesn't match
-            
-            if atmosphere and atmosphere not in r.get("Vibe", "").strip().lower():
-                continue  # Skip if vibe doesn't match
+        best_match = None
+        highest_score = 0
 
-            if social_interaction and social_interaction not in r.get("Social_Interaction_Level", "").strip().lower():
-                continue  # Skip if social interaction preference doesn't match
+        for restaurant in restaurants:
+            score = 0
 
-            if etc and etc not in r.get("ETC", "").strip().lower():
-                continue  # Skip if additional filters don't match
-            
-            recommendations.append({
-                "name": r.get("Restaurant_ID", "Unknown"),
-                "cuisine": r.get("Cuisine_Type", ""),
-                "price": r.get("Price_Level", ""),
-                "vibe": r.get("Vibe", ""),
-                "social": r.get("Social_Interaction_Level", ""),
-                "etc": r.get("ETC", ""),
-            })
+            # Match Cuisine (highest weight)
+            if restaurant.get("Cuisine_Type", "").strip().lower() == user_prefs["cuisine"]:
+                score += WEIGHTS["cuisine"]
 
-        return jsonify({"recommendations": recommendations})
+            # Match Budget
+            if user_prefs["budget"] in restaurant.get("Price_Level", ""):
+                score += WEIGHTS["budget"]
+
+            # Match Vibe
+            if user_prefs["vibe"] in restaurant.get("Vibe", "").strip().lower():
+                score += WEIGHTS["vibe"]
+
+            # Match Social Level
+            if user_prefs["social"] in restaurant.get("Social_Interaction_Level", "").strip().lower():
+                score += WEIGHTS["social"]
+
+            # Match Dietary Preferences (optional)
+            if user_prefs["dietary"] in restaurant.get("ETC", "").strip().lower():
+                score += WEIGHTS["dietary"]
+
+            # Track best match
+            if score > highest_score:
+                highest_score = score
+                best_match = restaurant.get("Restaurant_ID", "No match found")
+
+        return jsonify({"restaurant": best_match})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/", methods=["GET"])
-def home():
-    return "<h1>Welcome to the Restaurant Quiz</h1><p>Use the /recommend endpoint to get suggestions.</p>"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80, debug=True)

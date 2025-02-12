@@ -37,14 +37,16 @@
     
     <script>
         const questions = [
-            { text: "What type of cuisine do you prefer?", choices: ["American", "Mexican", "Asian", "Italian"], key: "cuisine" },
-            { text: "What is your budget?", choices: ["$", "$$", "$$$"], key: "budget" },
-            { text: "What kind of atmosphere do you prefer?", choices: ["Casual", "Romantic", "Lively"], key: "atmosphere" }
+            { text: "What type of cuisine do you prefer?", choices: ["American", "Mexican", "Asian", "Italian", "BBQ", "Fast Food", "Hawaiian", "Indian"], key: "cuisine" },
+            { text: "What is your budget?", choices: ["$", "$$", "$$$", "$$$$"], key: "budget" },
+            { text: "What kind of atmosphere do you prefer?", choices: ["Casual", "Romantic", "Lively", "Relaxed & Quiet", "Rustic & Cozy"], key: "vibe" },
+            { text: "How social do you want the dining experience to be?", choices: ["Open Seating", "Quiet & Private", "Fast & Efficient"], key: "social" },
+            { text: "Do you need any dietary options?", choices: ["Vegetarian", "Vegan", "Gluten-Free", "None"], key: "dietary" }
         ];
         
         let currentQuestion = 0;
         let responses = {};
-        
+
         function displayQuestion() {
             if (currentQuestion < questions.length) {
                 const question = questions[currentQuestion];
@@ -57,7 +59,7 @@
                     button.classList.add("choice-box");
                     button.innerText = choice;
                     button.onclick = () => {
-                        responses[question.key] = choice.toLowerCase();
+                        responses[question.key] = choice;
                         currentQuestion++;
                         displayQuestion();
                     };
@@ -67,9 +69,9 @@
                 submitResponses();
             }
         }
-        
+
         function submitResponses() {
-            fetch("http://localhost:5000/recommend", {
+            fetch("/recommend", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(responses)
