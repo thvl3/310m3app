@@ -91,7 +91,7 @@ def recommend():
         # Generate image URL
         image_path = f"/static/images/{best_match}.png"
         if not os.path.exists(os.path.join("static/images", f"{best_match}.png")):
-            image_path = "/static/images/default.png"  # Fallback to default
+            image_path = "/static/images/default.jpg"  # Fallback to default
 
         return jsonify({"restaurant": best_match, "image_url": image_path})
 
