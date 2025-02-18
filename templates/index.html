@@ -11,18 +11,49 @@
             margin: auto;
             padding: 20px;
             text-align: center;
+            background: url(/static/images/background.jpg) repeat center center/cover;
+            color: #9c8383;
+        }
+        h2 {
+            color: #d35400;
         }
         .choice-box {
             display: block;
             padding: 10px;
             margin: 10px auto;
             width: 80%;
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
+            border: 2px solid #d35400;
+            background-color: #fbeee6;
             cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
         }
         .choice-box:hover {
-            background-color: #ddd;
+            background-color: #f39c12;
+            color: white;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .restaurant-image {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+            border-radius: 10px;
+        }
+        #try-again {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #d35400;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #try-again:hover {
+            background-color: #a84300;
         }
     </style>
 </head>
@@ -33,7 +64,7 @@
         <div id="choices"></div>
     </div>
     
-    <h3 id="result"></h3>
+    <div id="result"></div>
     
     <script>
         const questions = [
@@ -73,19 +104,23 @@
         }
 
         function submitResponses() {
-            fetch("/recommend", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(responses)
-            })
-            .then(response => response.json())
-            .then(result => {
-                document.getElementById("quiz-container").style.display = "none";
-                let formattedName = result.restaurant.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
-                document.getElementById("result").innerHTML = `<h3>Best Match: ${formattedName}</h3><button id="try-again" onclick="location.reload()">Try Again</button>`;
-            })
-            .catch(error => console.error("Error:", error));
-        }
+    fetch("/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(responses)
+    })
+    .then(response => response.json())
+    .then(result => {
+        document.getElementById("quiz-container").style.display = "none";
+        let formattedName = result.restaurant.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+        let imageUrl = result.image_url; // Use the provided image URL
+        document.getElementById("result").innerHTML = `<h3>Best Match: ${formattedName}</h3>
+            <img class='restaurant-image' src='${imageUrl}' alt='Restaurant Image'>
+            <button id='try-again' onclick='location.reload()'>Try Again</button>`;
+    })
+    .catch(error => console.error("Error:", error));
+}
+
 
         displayQuestion();
     </script>

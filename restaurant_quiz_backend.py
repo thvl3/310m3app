@@ -1,39 +1,14 @@
-from flask import Flask, request, jsonify, render_template
+import os
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import boto3
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
 
 # Connect to DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-west-1")
-table = dynamodb.Table("RestaurantQuiz")  # Updated to correct table name
-
-# Assign weight importance
-WEIGHTS = {
-    "cuisine": 7,
-    "budget": 3,
-    "vibe": 2,
-    "social": 2,
-    "dietary": 4,
-    "group_size": 2,  # New question
-    "service_speed": 2  # New question
-}
-
-def map_budget(budget):
-    """Convert budget symbols to DynamoDB values"""
-    BUDGET_MAP = {
-        "$": "1-10",
-        "$$": "10-20",
-        "$$$": "20-30",
-        "$$$$": "30+"
-    }
-    return BUDGET_MAP.get(budget, budget)
-
-@app.route("/", methods=["GET"])
-def home():
-    """ Serve the quiz page """
-    return render_template("index.html")
+table = dynamodb.Table("RestaurantQuiz")
 
 @app.route("/recommend", methods=["POST"])
 def recommend():
@@ -45,12 +20,12 @@ def recommend():
         # Normalize user input
         user_prefs = {
             "cuisine": data.get("cuisine", "").strip().lower(),
-            "budget": map_budget(data.get("budget", "").strip()),
+            "budget": data.get("budget", "").strip(),
             "vibe": data.get("vibe", "").strip().lower(),
             "social": data.get("social", "").strip().lower(),
             "dietary": data.get("dietary", "").strip().lower(),
-            "group_size": data.get("group_size", "").strip().lower(),  # New
-            "service_speed": data.get("service_speed", "").strip().lower()  # New
+            "group_size": data.get("group_size", "").strip().lower(),
+            "service_speed": data.get("service_speed", "").strip().lower()
         }
 
         # Fetch all restaurants
@@ -63,43 +38,45 @@ def recommend():
         for restaurant in restaurants:
             score = 0
 
-            # Match Cuisine (highest weight)
             if restaurant.get("Cuisine_Type", "").strip().lower() == user_prefs["cuisine"]:
-                score += WEIGHTS["cuisine"]
+                score += 7
 
-            # Match Budget
             if user_prefs["budget"] in restaurant.get("Price_Level", ""):
-                score += WEIGHTS["budget"]
+                score += 3
 
-            # Match Vibe
             if user_prefs["vibe"] in restaurant.get("Vibe", "").strip().lower():
-                score += WEIGHTS["vibe"]
+                score += 2
 
-            # Match Social Level
             if user_prefs["social"] in restaurant.get("Social_Interaction_Level", "").strip().lower():
-                score += WEIGHTS["social"]
+                score += 2
 
-            # Match Dietary Preferences (optional)
             if user_prefs["dietary"] in restaurant.get("ETC", "").strip().lower():
-                score += WEIGHTS["dietary"]
+                score += 4
 
-            # Match Group Size (new criteria)
             if user_prefs["group_size"] in restaurant.get("Group_Size", "").strip().lower():
-                score += WEIGHTS["group_size"]
+                score += 2
 
-            # Match Service Speed (new criteria)
             if user_prefs["service_speed"] in restaurant.get("Service_Speed", "").strip().lower():
-                score += WEIGHTS["service_speed"]
+                score += 2
 
-            # Track best match
             if score > highest_score:
                 highest_score = score
-                best_match = restaurant.get("Restaurant_ID", "No match found")
+                best_match = restaurant.get("Restaurant_ID", "no_match")
 
-        return jsonify({"restaurant": best_match})
+        # Generate image URL
+        image_path = f"/static/images/{best_match}.png"
+        if not os.path.exists(os.path.join("static/images", f"{best_match}.png")):
+            image_path = "/static/images/default.png"  # Fallback to default
+
+        return jsonify({"restaurant": best_match, "image_url": image_path})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Serve static images
+@app.route("/static/images/<filename>")
+def serve_image(filename):
+    return send_from_directory("static/images", filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80, debug=True)
