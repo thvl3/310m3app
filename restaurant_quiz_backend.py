@@ -9,6 +9,31 @@ CORS(app)
 # Connect to DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-west-1")
 table = dynamodb.Table("RestaurantQuiz")
+# Assign weight importance
+WEIGHTS = {
+    "cuisine": 7,
+    "budget": 3,
+    "vibe": 2,
+    "social": 2,
+    "dietary": 4,
+    "group_size": 2,  # New question
+    "service_speed": 2  # New question
+}
+
+def map_budget(budget):
+    """Convert budget symbols to DynamoDB values"""
+    BUDGET_MAP = {
+        "$": "1-10",
+        "$$": "10-20",
+        "$$$": "20-30",
+        "$$$$": "30+"
+    }
+    return BUDGET_MAP.get(budget, budget)
+
+@app.route("/", methods=["GET"])
+def home():
+    """ Serve the quiz page """
+    return render_template("index.html")
 
 @app.route("/recommend", methods=["POST"])
 def recommend():
