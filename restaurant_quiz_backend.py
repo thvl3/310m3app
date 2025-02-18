@@ -7,7 +7,7 @@ CORS(app)
 
 # Connect to DynamoDB
 dynamodb = boto3.resource("dynamodb", region_name="us-west-1")
-table = dynamodb.Table("Restaurants")  # Update with your actual table name
+table = dynamodb.Table("RestaurantQuiz")  # Updated to correct table name
 
 # Assign weight importance
 WEIGHTS = {
@@ -15,7 +15,9 @@ WEIGHTS = {
     "budget": 3,
     "vibe": 2,
     "social": 2,
-    "dietary": 4
+    "dietary": 4,
+    "group_size": 2,  # New question
+    "service_speed": 2  # New question
 }
 
 def map_budget(budget):
@@ -46,7 +48,9 @@ def recommend():
             "budget": map_budget(data.get("budget", "").strip()),
             "vibe": data.get("vibe", "").strip().lower(),
             "social": data.get("social", "").strip().lower(),
-            "dietary": data.get("dietary", "").strip().lower()
+            "dietary": data.get("dietary", "").strip().lower(),
+            "group_size": data.get("group_size", "").strip().lower(),  # New
+            "service_speed": data.get("service_speed", "").strip().lower()  # New
         }
 
         # Fetch all restaurants
@@ -78,6 +82,14 @@ def recommend():
             # Match Dietary Preferences (optional)
             if user_prefs["dietary"] in restaurant.get("ETC", "").strip().lower():
                 score += WEIGHTS["dietary"]
+
+            # Match Group Size (new criteria)
+            if user_prefs["group_size"] in restaurant.get("Group_Size", "").strip().lower():
+                score += WEIGHTS["group_size"]
+
+            # Match Service Speed (new criteria)
+            if user_prefs["service_speed"] in restaurant.get("Service_Speed", "").strip().lower():
+                score += WEIGHTS["service_speed"]
 
             # Track best match
             if score > highest_score:

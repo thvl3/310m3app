@@ -41,7 +41,9 @@
             { text: "What is your budget?", choices: ["$", "$$", "$$$", "$$$$"], key: "budget" },
             { text: "What kind of atmosphere do you prefer?", choices: ["Casual", "Romantic", "Lively", "Relaxed & Quiet", "Rustic & Cozy"], key: "vibe" },
             { text: "How social do you want the dining experience to be?", choices: ["Open Seating", "Quiet & Private", "Fast & Efficient"], key: "social" },
-            { text: "Do you need any dietary options?", choices: ["Vegetarian", "Vegan", "Gluten-Free", "None"], key: "dietary" }
+            { text: "Do you need any dietary options?", choices: ["Vegetarian", "Vegan", "Gluten-Free", "None"], key: "dietary" },
+            { text: "What is your group size?", choices: ["Solo", "Couple", "Family", "Large Group"], key: "group_size" },
+            { text: "How fast do you want your food?", choices: ["Fast", "Moderate", "Take Your Time"], key: "service_speed" }
         ];
         
         let currentQuestion = 0;
@@ -71,48 +73,20 @@
         }
 
         function submitResponses() {
-    fetch("/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(responses)
-    })
-    .then(response => response.json())
-    .then(result => {
-        document.getElementById("quiz-container").style.display = "none";
-        
-        // Format restaurant name: replace underscores with spaces and capitalize words
-        let formattedName = result.restaurant.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+            fetch("/recommend", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(responses)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById("quiz-container").style.display = "none";
+                let formattedName = result.restaurant.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+                document.getElementById("result").innerHTML = `<h3>Best Match: ${formattedName}</h3><button id="try-again" onclick="location.reload()">Try Again</button>`;
+            })
+            .catch(error => console.error("Error:", error));
+        }
 
-        // Display formatted result
-        document.getElementById("result").innerHTML = `
-            <h3>Best Match: ${formattedName}</h3>
-            <button id="try-again" onclick="location.reload()">Try Again</button>
-        `;
-
-        // Style the button
-        document.getElementById("try-again").style.cssText = `
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        `;
-
-        document.getElementById("try-again").addEventListener("mouseover", function() {
-            this.style.backgroundColor = "#0056b3";
-        });
-
-        document.getElementById("try-again").addEventListener("mouseout", function() {
-            this.style.backgroundColor = "#007BFF";
-        });
-    })
-    .catch(error => console.error("Error:", error));
-}
-
-        
         displayQuestion();
     </script>
 </body>
